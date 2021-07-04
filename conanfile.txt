@@ -1,0 +1,14 @@
+[requires]
+boost/1.76.0
+fmt/8.0.0
+
+[generators]
+cmake
+
+[imports]
+bin, *.dll -> ./bin
+lib, *.dylib* -> ./bin
+
+[options]
+fmt:shared=False
+fmt:header_only=True
