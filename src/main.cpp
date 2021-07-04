@@ -67,14 +67,17 @@ struct Counter {
     }
 
     static void printHelp() {
-        fmt::print("? -> print the status; q -> exit; + <record> -> add the record;\n"
-                   "- <record> -> remove the record; d - <file name> -> dump all records to file;\n"
-                   "l - <file name> -> load records from file\n\n");
+        fmt::print("Commands:\n"
+                   "  ? : Print this help\n"
+                   "  ! : Print the current records dump\n"
+                   "  q : Exit\n"
+                   "  + <record> : Add the record\n"
+                   "  - <record> : Remove the record\n"
+                   "  d - <file name> : Dump all records to the file\n"
+                   "  l - <file name> : Load records from the file\n\n");
     }
 
-    void printStatus() {
-        printHelp();
-
+    void printDump() {
         std::cout << makeDump();
     }
 
@@ -82,25 +85,35 @@ struct Counter {
         if (command.empty()) return ProcessingStatus::None;
 
         if (command == "?") {
-            printStatus();
+            printHelp();
+
+            return ProcessingStatus::Ok;
+        }
+
+        if (command == "!") {
+            printDump();
 
             return ProcessingStatus::Ok;
         }
 
         if (command == "q") return ProcessingStatus::Quit;
 
-        if (command.size() < 2) return ProcessingStatus::Error;
+        if (command.size() < 2) {
+            printHelp();
+
+            return ProcessingStatus::Error;
+        }
 
         if (command.starts_with("+ ")) {
             add(command.substr(2));
-            printStatus();
+            printDump();
 
             return ProcessingStatus::Ok;
         }
 
         if (command.starts_with("- ")) {
             remove(command.substr(2));
-            printStatus();
+            printDump();
 
             return ProcessingStatus::Ok;
         }
@@ -108,18 +121,21 @@ struct Counter {
         if (command.starts_with("d ")) {
             dump(command.substr(2));
 
-            printStatus();
+            printDump();
 
             return ProcessingStatus::Ok;
         }
 
         if (command.starts_with("l ")) {
             if (load(command.substr(2)) == ProcessingStatus::Ok) {
+                printDump();
+
+                return ProcessingStatus::Ok;
             }
 
-            printStatus();
+            printDump();
 
-            return ProcessingStatus::Ok;
+            return ProcessingStatus::Error;
         }
 
         printHelp();
@@ -174,6 +190,8 @@ struct Counter {
             return ProcessingStatus::Error;
         }
 
+        std::unordered_map<std::string, std::size_t> tempData{};
+
         for (std::string record{}; std::getline(is, record);) {
             Record r;
             auto recordString = boost::trim_copy(record);
@@ -183,7 +201,7 @@ struct Counter {
             }
 
             if (r.fromString(recordString)) {
-                data[r.name] = r.count;
+                tempData[r.name] = r.count;
             } else {
                 is.close();
                 fmt::print("Error while reading the file: {}, error record: '{}'\n", fileName, recordString);
@@ -193,6 +211,8 @@ struct Counter {
         }
 
         is.close();
+
+        data = tempData;
         fmt::print("The dump has been loaded.\n");
 
         return ProcessingStatus::Ok;
@@ -202,11 +222,14 @@ struct Counter {
 int main() {
     Counter counter{};
 
-    std::string command{};
+    Counter::printHelp();
 
     for (;;) {
         std::cout << "Counter> " << std::flush;
+
+        std::string command{};
         std::getline(std::cin, command);
+
         if (counter.processCommand(boost::trim_copy(command)) == Counter::ProcessingStatus::Quit) break;
     }
 
