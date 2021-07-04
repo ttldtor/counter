@@ -1,5 +1,5 @@
-# The simple "useless" counter with interactive CLI
-The program demonstrates how to use CMake + Conan  
+# The simple "useless" counter with "interactive" CLI
+The program demonstrates how to use CMake + Conan + GitHub.Actions
 [![CMake](https://github.com/ttldtor/counter/actions/workflows/build.yml/badge.svg)](https://github.com/ttldtor/counter/actions/workflows/build.yml)
 
 ## Screenshots:
