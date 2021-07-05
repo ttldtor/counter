@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <boost/algorithm/string.hpp>
+#include <string>
 
 namespace cnt {
 struct NoneCommand {};
@@ -12,25 +12,29 @@ struct QuitCommand {};
 struct AddRecordCommand {
   std::string recordName{};
 
-  explicit AddRecordCommand(std::string s) : recordName{std::move(s)} {}
+  explicit AddRecordCommand(std::string s) : recordName{std::move(s)} {
+  }
 };
 
 struct RemoveRecordCommand {
   std::string recordName{};
 
-  explicit RemoveRecordCommand(std::string s) : recordName{std::move(s)} {}
+  explicit RemoveRecordCommand(std::string s) : recordName{std::move(s)} {
+  }
 };
 
 struct DumpRecordsCommand {
   std::string fileName{};
 
-  explicit DumpRecordsCommand(std::string s) : fileName{std::move(s)} {}
+  explicit DumpRecordsCommand(std::string s) : fileName{std::move(s)} {
+  }
 };
 
 struct LoadRecordsCommand {
   std::string fileName{};
 
-  explicit LoadRecordsCommand(std::string s) : fileName{std::move(s)} {}
+  explicit LoadRecordsCommand(std::string s) : fileName{std::move(s)} {
+  }
 };
 
 using Command = std::variant<NoneCommand, UnknownCommand, PrintHelpCommand, PrintRecordsCommand, QuitCommand,
@@ -38,23 +42,39 @@ using Command = std::variant<NoneCommand, UnknownCommand, PrintHelpCommand, Prin
 
 struct CommandParser {
   Command operator()(const std::string &commandString) const {
-    if (commandString.empty()) return NoneCommand{};
+    if (commandString.empty())
+      return NoneCommand{};
 
-    if (commandString == "?") { return PrintHelpCommand{}; }
+    if (commandString == "?") {
+      return PrintHelpCommand{};
+    }
 
-    if (commandString == "!") { return PrintRecordsCommand{}; }
+    if (commandString == "!") {
+      return PrintRecordsCommand{};
+    }
 
-    if (commandString == "q") return QuitCommand{};
+    if (commandString == "q")
+      return QuitCommand{};
 
-    if (commandString.size() < 3) { return UnknownCommand{}; }
+    if (commandString.size() < 3) {
+      return UnknownCommand{};
+    }
 
-    if (commandString.starts_with("+ ")) { return AddRecordCommand{boost::trim_copy(commandString.substr(2))}; }
+    if (commandString.starts_with("+ ")) {
+      return AddRecordCommand{boost::trim_copy(commandString.substr(2))};
+    }
 
-    if (commandString.starts_with("- ")) { return RemoveRecordCommand{boost::trim_copy(commandString.substr(2))}; }
+    if (commandString.starts_with("- ")) {
+      return RemoveRecordCommand{boost::trim_copy(commandString.substr(2))};
+    }
 
-    if (commandString.starts_with("d ")) { return DumpRecordsCommand{boost::trim_copy(commandString.substr(2))}; }
+    if (commandString.starts_with("d ")) {
+      return DumpRecordsCommand{boost::trim_copy(commandString.substr(2))};
+    }
 
-    if (commandString.starts_with("l ")) { return LoadRecordsCommand{boost::trim_copy(commandString.substr(2))}; }
+    if (commandString.starts_with("l ")) {
+      return LoadRecordsCommand{boost::trim_copy(commandString.substr(2))};
+    }
 
     return UnknownCommand{};
   }

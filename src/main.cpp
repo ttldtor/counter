@@ -12,6 +12,14 @@
 
 #include "CommandParser.hpp"
 
+template<typename... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
 namespace cnt {
 struct Counter {
   enum class ProcessingStatus { None, Quit, Ok, Error };
@@ -20,7 +28,9 @@ struct Counter {
     std::string name{};
     std::size_t count{};
 
-    [[nodiscard]] std::string toString() const { return fmt::format("{} - {}", name, count); }
+    [[nodiscard]] std::string toString() const {
+      return fmt::format("{} - {}", name, count);
+    }
 
     bool fromString(const std::string &str) {
       std::vector<std::string> split = {};
@@ -50,13 +60,17 @@ struct Counter {
     std::vector<Record> records;
     std::string result;
 
-    for (auto [k, v] : data) { records.emplace_back(Record{k, v}); }
+    for (auto [k, v] : data) {
+      records.emplace_back(Record{k, v});
+    }
 
     std::sort(records.begin(), records.end(), [](const Record &r1, const Record &r2) {
       return (r1.count > r2.count) || (r1.count == r2.count && r1.name < r2.name);
     });
 
-    for (const auto &r : records) { result += fmt::format("{}\n", r.toString()); }
+    for (const auto &r : records) {
+      result += fmt::format("{}\n", r.toString());
+    }
 
     return result;
   }
@@ -72,54 +86,47 @@ struct Counter {
                "  l - <file name> : Load records from the file\n\n");
   }
 
-  void printDump() { std::cout << makeDump(); }
+  void printDump() {
+    std::cout << makeDump();
+  }
 
   ProcessingStatus processCommand(const std::string &command) {
-    return std::visit(
-      [this](auto &&arg) {
-        using T = std::decay_t<decltype(arg)>;
+    return std::visit(overloaded{[](auto arg) {
+                                   return printHelp(), ProcessingStatus::Error;
+                                 },
+                                 [](NoneCommand) {
+                                   return ProcessingStatus::None;
+                                 },
+                                 [](PrintHelpCommand) {
+                                   return printHelp(), ProcessingStatus::Ok;
+                                 },
+                                 [this](PrintRecordsCommand) {
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [](QuitCommand) {
+                                   return ProcessingStatus::Quit;
+                                 },
+                                 [this](const AddRecordCommand &c) {
+                                   add(c.recordName);
 
-        if constexpr (std::is_same_v<T, NoneCommand>) {
-          return ProcessingStatus::None;
-        } else if constexpr (std::is_same_v<T, PrintHelpCommand>) {
-          printHelp();
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [this](const RemoveRecordCommand &c) {
+                                   remove(c.recordName);
 
-          return ProcessingStatus::Ok;
-        } else if constexpr (std::is_same_v<T, PrintRecordsCommand>) {
-          printDump();
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [this](const DumpRecordsCommand &c) {
+                                   dumpToFile(c.fileName);
 
-          return ProcessingStatus::Ok;
-        } else if constexpr (std::is_same_v<T, QuitCommand>) {
-          return ProcessingStatus::Quit;
-        } else if constexpr (std::is_same_v<T, AddRecordCommand>) {
-          add(arg.recordName);
-          printDump();
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [this](const LoadRecordsCommand &c) {
+                                   auto result = loadFromFile(c.fileName);
 
-          return ProcessingStatus::Ok;
-        } else if constexpr (std::is_same_v<T, RemoveRecordCommand>) {
-          remove(arg.recordName);
-          printDump();
-
-          return ProcessingStatus::Ok;
-        } else if constexpr (std::is_same_v<T, DumpRecordsCommand>) {
-          dump(arg.fileName);
-
-          printDump();
-
-          return ProcessingStatus::Ok;
-        } else if constexpr (std::is_same_v<T, LoadRecordsCommand>) {
-          auto result = load(arg.fileName);
-
-          printDump();
-
-          return result;
-        }
-
-        printHelp();
-
-        return ProcessingStatus::Error;
-      },
-      CommandParser{}(command));
+                                   return printDump(), result;
+                                 }},
+                      CommandParser{}(command));
   }
 
   void add(const std::string &name) {
@@ -152,7 +159,7 @@ struct Counter {
     }
   }
 
-  void dump(const std::string &fileName) {
+  void dumpToFile(const std::string &fileName) {
     std::ofstream os{fileName};
 
     os << makeDump();
@@ -160,7 +167,7 @@ struct Counter {
     fmt::print("Dumped: {}\n", data.size());
   }
 
-  ProcessingStatus load(const std::string &fileName) {
+  ProcessingStatus loadFromFile(const std::string &fileName) {
     std::ifstream is(fileName);
 
     if (!is.is_open()) {
@@ -175,7 +182,9 @@ struct Counter {
       Record r;
       auto recordString = boost::trim_copy(record);
 
-      if (recordString.empty()) { continue; }
+      if (recordString.empty()) {
+        continue;
+      }
 
       if (r.fromString(recordString)) {
         tempData[r.name] = r.count;
@@ -195,7 +204,7 @@ struct Counter {
     return ProcessingStatus::Ok;
   }
 };
-}
+}// namespace cnt
 
 int main() {
   cnt::Counter counter{};
@@ -208,7 +217,8 @@ int main() {
     std::string command{};
     std::getline(std::cin, command);
 
-    if (counter.processCommand(boost::trim_copy(command)) == cnt::Counter::ProcessingStatus::Quit) break;
+    if (counter.processCommand(boost::trim_copy(command)) == cnt::Counter::ProcessingStatus::Quit)
+      break;
   }
 
   return 0;
