@@ -17,7 +17,7 @@ struct overloaded : Ts... {
   using Ts::operator()...;
 };
 
-template<class... Ts>
+template<typename... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 namespace cnt {
