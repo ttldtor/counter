@@ -32,6 +32,13 @@ struct DumpRecordsCommand {
   }
 };
 
+struct DumpRecordsCsvCommand {
+  std::string fileName{};
+
+  explicit DumpRecordsCsvCommand(std::string s) : fileName{std::move(s)} {
+  }
+};
+
 struct LoadRecordsCommand {
   std::string fileName{};
 
@@ -40,7 +47,8 @@ struct LoadRecordsCommand {
 };
 
 using Command = std::variant<NoneCommand, UnknownCommand, PrintHelpCommand, PrintRecordsCommand, QuitCommand,
-                             AddRecordCommand, RemoveRecordCommand, RemoveAllRecordsCommand, DumpRecordsCommand, LoadRecordsCommand>;
+                             AddRecordCommand, RemoveRecordCommand, RemoveAllRecordsCommand, DumpRecordsCommand,
+                             DumpRecordsCsvCommand, LoadRecordsCommand>;
 
 struct CommandParser {
   Command operator()(const std::string &commandString) const {
@@ -77,6 +85,10 @@ struct CommandParser {
 
     if (commandString.starts_with("d ")) {
       return DumpRecordsCommand{boost::trim_copy(commandString.substr(2))};
+    }
+
+    if (commandString.starts_with("dc ")) {
+      return DumpRecordsCsvCommand{boost::trim_copy(commandString.substr(2))};
     }
 
     if (commandString.starts_with("l ")) {

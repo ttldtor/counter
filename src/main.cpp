@@ -21,6 +21,17 @@ template<typename... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 namespace cnt {
+
+auto CsvFormatter = [](const std::string &s, const std::string &sep = ",", const std::string &quote = "\"") {
+  auto result = boost::replace_all_copy(s, quote, quote + quote);
+
+  if (result.size() != s.size() || s.find_first_of("\t\n\v\r " + sep) != std::string::npos) {
+    result = quote + result + quote;
+  }
+
+  return result;
+};
+
 struct Counter {
   enum class ProcessingStatus { None, Quit, Ok, Error };
 
@@ -33,8 +44,16 @@ struct Counter {
       return fmt::format("{} - {}", name, count);
     }
 
+    static std::string getCsvHeader(const std::string &sep = ",", const std::string &quote = "\"") {
+      return fmt::format("name{}count", sep);
+    }
+
+    [[nodiscard]] std::string toCsvString(const std::string &sep = ",", const std::string &quote = "\"") const {
+      return fmt::format("{}{}{}", CsvFormatter(name, sep, quote), sep, count);
+    }
+
     bool fromString(const std::string &str) {
-      std::vector<std::string> split = {};
+      std::vector<std::string> split{};
 
       boost::algorithm::split_regex(split, str, boost::regex(R"(\s+-\s+)"));
 
@@ -57,7 +76,8 @@ struct Counter {
 
   std::unordered_map<std::string, std::size_t> data{};
 
-  std::string makeDump() {
+  template<typename HeaderDumper, typename RecordDumper>
+  std::string makeDump(HeaderDumper &&headerDumper, RecordDumper &&recordDumper) {
     std::vector<Record> records;
     std::string result;
 
@@ -69,11 +89,37 @@ struct Counter {
       return (r1.count > r2.count) || (r1.count == r2.count && r1.name < r2.name);
     });
 
+    auto header = std::invoke(headerDumper);
+
+    if (!header.empty()) {
+      result += header + "\n";
+    }
+
     for (const auto &r : records) {
-      result += fmt::format("{}\n", r.toString());
+      result += fmt::format("{}\n", std::invoke(recordDumper, r));
     }
 
     return result;
+  }
+
+  std::string makeDump() {
+    return makeDump(
+      [] {
+        return std::string{};
+      },
+      [](const auto& record) {
+        return record.toString();
+      });
+  }
+
+  std::string makeCsvDump(const std::string &sep = ",", const std::string &quote = "\"") {
+    return makeDump(
+      [sep, quote] {
+        return Record::getCsvHeader(sep, quote);
+      },
+      [sep, quote](const auto& record) {
+        return record.toCsvString(sep, quote);
+      });
   }
 
   void printDump() {
@@ -120,6 +166,14 @@ struct Counter {
     std::ofstream os{fileName};
 
     os << makeDump();
+
+    fmt::print("Dumped: {}\n", data.size());
+  }
+
+  void dumpToCsvFile(const std::string &fileName, const std::string &sep = ",", const std::string &quote = "\"") {
+    std::ofstream os{fileName};
+
+    os << makeCsvDump(sep, quote);
 
     fmt::print("Dumped: {}\n", data.size());
   }
@@ -171,6 +225,7 @@ struct Counter {
                "  - <record> : Remove the record\n"
                "  * : Remove all records\n"
                "  d <file name> : Dump all records to the file\n"
+               "  dc <file name> : Dump all records to the file in CSV format\n"
                "  l <file name> : Load records from the file\n\n");
   }
 
@@ -207,6 +262,11 @@ struct Counter {
                                  },
                                  [this](const DumpRecordsCommand &c) {
                                    dumpToFile(c.fileName);
+
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [this](const DumpRecordsCsvCommand &c) {
+                                   dumpToCsvFile(c.fileName);
 
                                    return printDump(), ProcessingStatus::Ok;
                                  },
