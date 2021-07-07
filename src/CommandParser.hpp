@@ -23,6 +23,8 @@ struct RemoveRecordCommand {
   }
 };
 
+struct RemoveAllRecordsCommand {};
+
 struct DumpRecordsCommand {
   std::string fileName{};
 
@@ -38,7 +40,7 @@ struct LoadRecordsCommand {
 };
 
 using Command = std::variant<NoneCommand, UnknownCommand, PrintHelpCommand, PrintRecordsCommand, QuitCommand,
-                             AddRecordCommand, RemoveRecordCommand, DumpRecordsCommand, LoadRecordsCommand>;
+                             AddRecordCommand, RemoveRecordCommand, RemoveAllRecordsCommand, DumpRecordsCommand, LoadRecordsCommand>;
 
 struct CommandParser {
   Command operator()(const std::string &commandString) const {
@@ -53,8 +55,13 @@ struct CommandParser {
       return PrintRecordsCommand{};
     }
 
-    if (commandString == "q")
+    if (commandString == "q") {
       return QuitCommand{};
+    }
+
+    if (commandString == "*") {
+      return RemoveAllRecordsCommand{};
+    }
 
     if (commandString.size() < 3) {
       return UnknownCommand{};

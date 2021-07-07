@@ -24,6 +24,7 @@ namespace cnt {
 struct Counter {
   enum class ProcessingStatus { None, Quit, Ok, Error };
 
+  private:
   struct Record {
     std::string name{};
     std::size_t count{};
@@ -75,61 +76,11 @@ struct Counter {
     return result;
   }
 
-  static void printHelp() {
-    fmt::print("Commands:\n"
-               "  ? : Print this help\n"
-               "  ! : Print the current records dump\n"
-               "  q : Exit\n"
-               "  + <record> : Add the record\n"
-               "  - <record> : Remove the record\n"
-               "  d - <file name> : Dump all records to the file\n"
-               "  l - <file name> : Load records from the file\n\n");
-  }
-
   void printDump() {
     std::cout << makeDump();
   }
 
-  ProcessingStatus processCommand(const std::string &command) {
-    return std::visit(overloaded{[](auto arg) {
-                                   return printHelp(), ProcessingStatus::Error;
-                                 },
-                                 [](NoneCommand) {
-                                   return ProcessingStatus::None;
-                                 },
-                                 [](PrintHelpCommand) {
-                                   return printHelp(), ProcessingStatus::Ok;
-                                 },
-                                 [this](PrintRecordsCommand) {
-                                   return printDump(), ProcessingStatus::Ok;
-                                 },
-                                 [](QuitCommand) {
-                                   return ProcessingStatus::Quit;
-                                 },
-                                 [this](const AddRecordCommand &c) {
-                                   add(c.recordName);
-
-                                   return printDump(), ProcessingStatus::Ok;
-                                 },
-                                 [this](const RemoveRecordCommand &c) {
-                                   remove(c.recordName);
-
-                                   return printDump(), ProcessingStatus::Ok;
-                                 },
-                                 [this](const DumpRecordsCommand &c) {
-                                   dumpToFile(c.fileName);
-
-                                   return printDump(), ProcessingStatus::Ok;
-                                 },
-                                 [this](const LoadRecordsCommand &c) {
-                                   auto result = loadFromFile(c.fileName);
-
-                                   return printDump(), result;
-                                 }},
-                      CommandParser{}(command));
-  }
-
-  void add(const std::string &name) {
+  void addRecord(const std::string &name) {
     auto it = data.find(name);
 
     if (it == data.end()) {
@@ -143,7 +94,7 @@ struct Counter {
     }
   }
 
-  void remove(const std::string &name) {
+  void removeRecord(const std::string &name) {
     auto it = data.find(name);
 
     if (it != data.end()) {
@@ -157,6 +108,12 @@ struct Counter {
         fmt::print("Decremented the '{}' record\n", name);
       }
     }
+  }
+
+  void removeAllRecords() {
+    data.clear();
+
+    fmt::print("All records removed\n");
   }
 
   void dumpToFile(const std::string &fileName) {
@@ -202,6 +159,63 @@ struct Counter {
     fmt::print("The dump has been loaded.\n");
 
     return ProcessingStatus::Ok;
+  }
+
+  public:
+  static void printHelp() {
+    fmt::print("Commands:\n"
+               "  ? : Print this help\n"
+               "  ! : Print the current records dump\n"
+               "  q : Exit\n"
+               "  + <record> : Add the record\n"
+               "  - <record> : Remove the record\n"
+               "  * : Remove all records\n"
+               "  d <file name> : Dump all records to the file\n"
+               "  l <file name> : Load records from the file\n\n");
+  }
+
+  ProcessingStatus processCommand(const std::string &command) {
+    return std::visit(overloaded{[](auto arg) {
+                                   return printHelp(), ProcessingStatus::Error;
+                                 },
+                                 [](NoneCommand) {
+                                   return ProcessingStatus::None;
+                                 },
+                                 [](PrintHelpCommand) {
+                                   return printHelp(), ProcessingStatus::Ok;
+                                 },
+                                 [this](PrintRecordsCommand) {
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [](QuitCommand) {
+                                   return ProcessingStatus::Quit;
+                                 },
+                                 [this](const AddRecordCommand &c) {
+                                   addRecord(c.recordName);
+
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [this](const RemoveRecordCommand &c) {
+                                   removeRecord(c.recordName);
+
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [this](RemoveAllRecordsCommand) {
+                                   removeAllRecords();
+
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [this](const DumpRecordsCommand &c) {
+                                   dumpToFile(c.fileName);
+
+                                   return printDump(), ProcessingStatus::Ok;
+                                 },
+                                 [this](const LoadRecordsCommand &c) {
+                                   auto result = loadFromFile(c.fileName);
+
+                                   return printDump(), result;
+                                 }},
+                      CommandParser{}(command));
   }
 };
 }// namespace cnt
