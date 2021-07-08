@@ -3,7 +3,8 @@ boost/1.76.0
 fmt/8.0.0
 
 [generators]
-cmake
+cmake_find_package
+cmake_paths
 
 [imports]
 bin, *.dll -> ./bin
