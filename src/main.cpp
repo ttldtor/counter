@@ -107,7 +107,7 @@ struct Counter {
       [] {
         return std::string{};
       },
-      [](const auto& record) {
+      [](const auto &record) {
         return record.toString();
       });
   }
@@ -117,7 +117,7 @@ struct Counter {
       [sep, quote] {
         return Record::getCsvHeader(sep, quote);
       },
-      [sep, quote](const auto& record) {
+      [sep, quote](const auto &record) {
         return record.toCsvString(sep, quote);
       });
   }
@@ -230,7 +230,7 @@ struct Counter {
   }
 
   ProcessingStatus processCommand(const std::string &command) {
-    return std::visit(overloaded{[](auto arg) {
+    return std::visit(overloaded{[](auto) {
                                    return printHelp(), ProcessingStatus::Error;
                                  },
                                  [](NoneCommand) {

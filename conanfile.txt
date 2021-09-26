@@ -1,5 +1,5 @@
 [requires]
-boost/1.76.0
+boost/1.77.0
 fmt/8.0.0
 
 [generators]
