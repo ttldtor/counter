@@ -15,7 +15,8 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, ttldtor-win-x64]
+#        os: [ubuntu-latest, ttldtor-win-x64]
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
