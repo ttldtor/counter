@@ -6,3 +6,13 @@ The program demonstrates how to use CMake + Conan + GitHub.Actions
 ## Screenshots:
 ![1](./screenshots/1.png)
 ![2](./screenshots/2.png)
+
+## How to Build
+
+```console
+mkdir build
+cd build
+conan install ..
+cmake ..
+cmake --build .
+```
