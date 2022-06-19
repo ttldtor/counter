@@ -78,8 +78,8 @@ struct Counter {
 
   template<typename HeaderDumper, typename RecordDumper>
   std::string makeDump(HeaderDumper &&headerDumper, RecordDumper &&recordDumper) {
-    std::vector<Record> records;
-    std::string result;
+    std::vector<Record> records{};
+    std::string result{};
 
     for (auto [k, v] : data) {
       records.emplace_back(Record{k, v});
@@ -89,14 +89,14 @@ struct Counter {
       return (r1.count > r2.count) || (r1.count == r2.count && r1.name < r2.name);
     });
 
-    auto header = std::invoke(headerDumper);
+    auto header = std::invoke(std::forward<HeaderDumper>(headerDumper));
 
     if (!header.empty()) {
       result += header + "\n";
     }
 
     for (const auto &r : records) {
-      result += fmt::format("{}\n", std::invoke(recordDumper, r));
+      result += fmt::format("{}\n", std::invoke(std::forward<RecordDumper>(recordDumper), r));
     }
 
     return result;
@@ -289,10 +289,13 @@ int main() {
     std::cout << "Counter> " << std::flush;
 
     std::string command{};
-    std::getline(std::cin, command);
-
-    if (counter.processCommand(boost::trim_copy(command)) == cnt::Counter::ProcessingStatus::Quit)
+    if (!std::getline(std::cin, command)) {
       break;
+    }
+
+    if (counter.processCommand(boost::trim_copy(command)) == cnt::Counter::ProcessingStatus::Quit) {
+      break;
+    }
   }
 
   return 0;
